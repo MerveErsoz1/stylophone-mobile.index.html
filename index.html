@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Stylophone S-1</title>
+
+  <!-- PWA & Mobil Tam Ekran Meta Etiketleri -->
+  <meta name="theme-color" content="#121417" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Stylophone S-1" />
+  <meta name="description" content="Dokunmatik ekranlar için tasarlanmış analog Dubreq Stylophone S-1 sentezleyici." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Yazı Tipleri -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Orbitron:wght@700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+      background-color: #101215;
+      font-family: 'Inter', sans-serif;
+      color: #e5e7eb;
+    }
+
+    /* Mat Siyah Retro Dubreq S-1 Gövdesi */
+    .chassis {
+      width: 100vw;
+      height: 100dvh;
+      padding:
+        max(8px, var(--safe-top))
+        max(10px, var(--safe-right))
+        max(8px, var(--safe-bottom))
+        max(10px, var(--safe-left));
+      background:
+        radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 45%),
+        linear-gradient(175deg, #21242a 0%, #15171b 45%, #0e1013 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Dikey mod uyarısı - sadece dikey (portrait) konumda görünür */
+    .portrait-hint {
+      display: none;
+    }
+    @media (orientation: portrait) {
+      .portrait-hint:not(.dismissed) {
+        display: flex;
+      }
+    }
+
+    /* Üst Fırçalanmış Alüminyum Kontrol Paneli */
+    .top-panel {
+      flex: 0 0 auto;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.03) 0px,
+          rgba(255, 255, 255, 0.03) 1px,
+          rgba(0, 0, 0, 0.035) 1px,
+          rgba(0, 0, 0, 0.035) 3px
+        ),
+        linear-gradient(180deg, #cfd5dd 0%, #aeb5c0 48%, #8e96a2 100%);
+      border: 1px solid #6b7280;
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.78),
+        inset 0 -2px 5px rgba(0, 0, 0, 0.35),
+        0 4px 12px rgba(0, 0, 0, 0.55);
+      border-radius: 14px;
+      padding: 8px 10px;
+    }
+
+    /* Yatay (Landscape) modda üst panel kompakt ~%36, klavye ~%64 */
+    @media (orientation: landscape) and (max-height: 540px) {
+      .chassis {
+        gap: 6px;
+        padding:
+          max(6px, var(--safe-top))
+          max(10px, var(--safe-right))
+          max(6px, var(--safe-bottom))
+          max(10px, var(--safe-left));
+      }
+      .top-panel {
+        padding: 6px 10px;
+      }
+    }
+
+    /* Hoparlör Izgarası */
+    .speaker-grille {
+      background-color: #141619;
+      background-image:
+        radial-gradient(circle, #060708 38%, transparent 43%),
+        radial-gradient(circle, #2d323a 38%, transparent 43%);
+      background-size: 7px 7px;
+      background-position: 0 0, 0 1px;
+      border: 1.5px solid #2b3038;
+      box-shadow:
+        inset 0 3px 8px rgba(0, 0, 0, 0.92),
+        0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .retro-logo {
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 0.12em;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    /* Kırmızı Güç LED'i */
+    .power-led {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      background: #3d1212;
+      border: 1px solid #1b1e24;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.85);
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .power-led.on {
+      background: radial-gradient(circle at 35% 35%, #ff9e96 0%, #ef4444 55%, #991b1b 100%);
+      box-shadow:
+        0 0 8px rgba(239, 68, 68, 0.95),
+        0 0 16px rgba(239, 68, 68, 0.45);
+    }
+
+    /* Mekanik Rocker / Sürgülü Anahtarlar */
+    .rocker-group {
+      background: #101216;
+      border: 1px solid #3c424d;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9);
+      border-radius: 7px;
+      padding: 2px;
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    .rocker-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 8px;
+      border-radius: 5px;
+      color: #8b93a2;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .rocker-btn.active {
+      background: linear-gradient(180deg, #434a57 0%, #262b33 100%);
+      color: #ffffff;
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.85),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .rocker-btn.active-red {
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+      color: #ffffff;
+      box-shadow:
+        0 0 8px rgba(220, 38, 38, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .rocker-btn.active-amber {
+      background: linear-gradient(180deg, #d97706 0%, #92400e 100%);
+      color: #ffffff;
+      box-shadow:
+        0 0 8px rgba(217, 119, 6, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .rocker-btn.active-emerald {
+      background: linear-gradient(180deg, #059669 0%, #065f46 100%);
+      color: #ffffff;
+      box-shadow:
+        0 0 8px rgba(16, 185, 129, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    /* Kompakt Dokunmatik Slider (Ses & Akort) */
+    input[type='range'].hardware-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #0d0f13;
+      height: 8px;
+      border-radius: 9999px;
+      border: 1px solid #353b45;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+      outline: none;
+      touch-action: pan-x;
+    }
+
+    input[type='range'].hardware-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f8fafc 0%, #9ca3af 55%, #4b5563 100%);
+      border: 1.5px solid #111827;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+    }
+
+    input[type='range'].hardware-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f8fafc 0%, #9ca3af 55%, #4b5563 100%);
+      border: 1.5px solid #111827;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+    }
+
+    /* Metalik Klavye Yatağı (Ekranın alt %60+ kısmını kaplar) */
+    .keyboard-deck {
+      flex: 1 1 auto;
+      min-height: 0;
+      background: #08090b;
+      border: 2px solid #2c313a;
+      border-radius: 14px;
+      padding: 6px;
+      box-shadow:
+        inset 0 5px 14px rgba(0, 0, 0, 0.95),
+        0 1px 0 rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      touch-action: none;
+    }
+
+    .keyboard-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 9px;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* Doğal (Alt Sıra) Bakır/Gümüş Kazınmış Metal Tuşlar */
+    .metal-key-natural {
+      background:
+        repeating-linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.04) 0px,
+          rgba(255, 255, 255, 0.04) 1px,
+          rgba(0, 0, 0, 0.03) 1px,
+          rgba(0, 0, 0, 0.03) 4px
+        ),
+        linear-gradient(180deg, #dde1e7 0%, #c8cdd6 45%, #b8bec8 82%, #a2a9b5 100%);
+      border-left: 1px solid #1d2026;
+      border-right: 1px solid #1d2026;
+      border-bottom: 3px solid #636b78;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.82),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.22);
+      color: #181a1f;
+      position: relative;
+      transition: background 0.04s ease, box-shadow 0.04s ease;
+    }
+
+    .metal-key-natural.active {
+      background: linear-gradient(180deg, #fef08a 0%, #f59e0b 52%, #b45309 100%);
+      color: #111316;
+      border-bottom-color: #fde68a;
+      box-shadow:
+        inset 0 2px 10px rgba(0, 0, 0, 0.35),
+        0 0 22px rgba(245, 158, 11, 0.85);
+      z-index: 6;
+    }
+
+    /* Diyez / Bemol (Üst Sıra) Kabartmalı Koyu Metal Pedler */
+    .metal-key-sharp {
+      background:
+        linear-gradient(180deg, #2b303a 0%, #191c22 52%, #0e1014 100%);
+      border: 1.5px solid #525a69;
+      border-top: 1px solid #778091;
+      box-shadow:
+        0 6px 12px rgba(0, 0, 0, 0.82),
+        inset 0 1px 1px rgba(255, 255, 255, 0.26);
+      color: #e5e7eb;
+      z-index: 20;
+      transition: background 0.04s ease, box-shadow 0.04s ease;
+    }
+
+    .metal-key-sharp::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 100%);
+      pointer-events: none;
+    }
+
+    .metal-key-sharp.active {
+      background: linear-gradient(180deg, #fcd34d 0%, #d97706 62%, #92400e 100%);
+      border-color: #fef08a;
+      color: #111316;
+      box-shadow:
+        0 0 20px rgba(245, 158, 11, 0.9),
+        inset 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Nota etiketlerini gizle/göster */
+    .hide-labels .key-label {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    .key-label {
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+    }
+
+    /* Ritim nabız halkası */
+    @keyframes beatPulse {
+      0% { transform: scale(1); opacity: 0.9; }
+      100% { transform: scale(1.9); opacity: 0; }
+    }
+    .beat-ring {
+      animation: beatPulse 0.555s ease-out infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="chassis" aria-label="Sanal Stylophone S-1 Mobil Uygulaması">
+
+    <!-- Dikey Mod (Portrait) Yatay Çevirme İpucu -->
+    <div
+      id="portraitHint"
+      class="portrait-hint items-center justify-between gap-2 bg-amber-500/15 border border-amber-500/40 text-amber-200 rounded-xl px-3 py-1.5 text-xs shrink-0"
+    >
+      <div class="flex items-center gap-2 min-w-0">
+        <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 8l5-5m0 0l5 5m-5-5v12" />
+        </svg>
+        <span class="truncate">Daha geniş metal tuşlar için telefonunu <strong>yatay</strong> çevir.</span>
+      </div>
+      <button
+        id="dismissHintBtn"
+        type="button"
+        class="px-2 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 font-semibold text-[11px] shrink-0"
+        aria-label="Uyarıyı kapat"
+      >
+        Kapat
+      </button>
+    </div>
+
+    <!-- ÜST DONANIM PANELİ (Hoparlör, Logo, Anahtarlar, Ses & Akort) -->
+    <section class="top-panel flex flex-col gap-2">
+
+      <!-- 1. Satır: Hoparlör + Logo + Aktif Nota + Güç Anahtarı -->
+      <div class="flex items-center justify-between gap-2.5">
+
+        <!-- Sol: Fırçalanmış Panel İçinde Hoparlör Izgarası -->
+        <div class="speaker-grille h-10 sm:h-12 w-24 sm:w-36 md:w-48 rounded-lg shrink-0 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/50 pointer-events-none"></div>
+        </div>
+
+        <!-- Orta: Dubreq S-1 Logosu ve Dijital Nota Ekranı -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="min-w-0">
+            <div class="retro-logo text-zinc-900 text-sm sm:text-base md:text-lg font-extrabold leading-none truncate">
+              STYLOPHONE
+            </div>
+            <div class="text-[9px] font-mono font-bold tracking-[0.2em] text-zinc-700 mt-0.5 hidden sm:block">
+              DUBREQ S-1 ANALOG
+            </div>
+          </div>
+
+          <!-- Mini OLED Nota Göstergesi -->
+          <div class="bg-zinc-950 border border-zinc-700 rounded-md px-2 py-1 min-w-[60px] text-center shadow-inner">
+            <div id="noteReadout" class="font-mono text-xs font-bold text-amber-400 leading-none">--</div>
+          </div>
+        </div>
+
+        <!-- Sağ: Kırmızı LED + Güç Rocker Anahtarı -->
+        <div class="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-700 rounded-lg px-2 py-1 shrink-0">
+          <div id="powerLed" class="power-led on" title="Güç LED"></div>
+          <button
+            id="powerBtn"
+            type="button"
+            class="rocker-btn active-red !min-h-[24px] !py-0.5 !px-2 !text-[10px]"
+          >
+            GÜÇ: AÇIK
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 2. Satır: Taktil Anahtarlar + Kompakt Sliderlar -->
+      <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pt-1 border-t border-zinc-600/35">
+
+        <!-- Sol Grup: Oktav + Vibrato + 108 BPM Ritim -->
+        <div class="flex flex-wrap items-center gap-2">
+
+          <!-- Oktav (1 / 2 / 3) -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono font-bold text-zinc-900 uppercase">Oktav</span>
+            <div class="rocker-group" role="group" aria-label="Oktav Seçici">
+              <button type="button" data-octave="1" class="rocker-btn octave-btn">1</button>
+              <button type="button" data-octave="2" class="rocker-btn octave-btn active">2</button>
+              <button type="button" data-octave="3" class="rocker-btn octave-btn">3</button>
+            </div>
+          </div>
+
+          <!-- Vibrato (~6 Hz) -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono font-bold text-zinc-900 uppercase">Vibrato</span>
+            <div class="rocker-group" role="group" aria-label="Vibrato">
+              <button type="button" id="vibratoBtn" class="rocker-btn">KAPALI</button>
+            </div>
+          </div>
+
+          <!-- 108 BPM Deep House Ritmi -->
+          <div class="rocker-group">
+            <button type="button" id="beatBtn" class="rocker-btn gap-1.5">
+              <span class="relative flex h-2 w-2">
+                <span id="beatPing" class="hidden absolute inline-flex h-full w-full rounded-full bg-amber-300 beat-ring"></span>
+                <span id="beatDot" class="relative inline-flex rounded-full h-2 w-2 bg-zinc-500"></span>
+              </span>
+              <span>108 BPM Ritim</span>
+            </button>
+          </div>
+
+          <!-- Titreşim (Haptic) + Nota Etiketleri -->
+          <div class="rocker-group">
+            <button type="button" id="hapticBtn" class="rocker-btn active-emerald" title="Dokunma titreşimi (Android)">
+              Titreşim
+            </button>
+            <button type="button" id="labelsBtn" class="rocker-btn active" title="Nota etiketlerini göster/gizle">
+              Nota
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Sağ Grup: Ses & Akort Sliderları -->
+        <div class="flex items-center gap-3 flex-1 min-w-[200px] max-w-sm ml-auto">
+
+          <!-- Ses -->
+          <div class="flex items-center gap-1.5 flex-1">
+            <label for="volumeSlider" class="text-[10px] font-mono font-bold text-zinc-900 uppercase shrink-0">Ses</label>
+            <input id="volumeSlider" type="range" min="0" max="100" value="80" class="hardware-slider w-full" aria-label="Ses Seviyesi" />
+            <span id="volumeVal" class="text-[10px] font-mono font-bold text-zinc-900 w-7 text-right">80%</span>
+          </div>
+
+          <!-- Akort (±100 cent, sıfırlamak için tıkla) -->
+          <div class="flex items-center gap-1.5 flex-1">
+            <button
+              id="tuneResetBtn"
+              type="button"
+              class="text-[10px] font-mono font-bold text-zinc-900 underline uppercase shrink-0"
+              title="Akordu sıfırla (440 Hz)"
+            >
+              Akort
+            </button>
+            <input id="tuneSlider" type="range" min="-100" max="100" value="0" class="hardware-slider w-full" aria-label="İnce Akort" />
+            <span id="tuneVal" class="text-[10px] font-mono font-bold text-zinc-900 w-8 text-right">0¢</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ALT METALİK KLAVYE ALANI (20 TUŞ: A3 – E5) -->
+    <section class="keyboard-deck" aria-label="20 Tuşlu Metal Stylophone Klavyesi">
+      <div id="keyboardStage" class="keyboard-stage">
+        <!-- 20 Metal Tuş JavaScript ile oluşturulur -->
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /**
+     * =========================================================================
+     * 1. DİNAMİK PWA MANIFEST & SVG SİMGE OLUŞTURUCU (ANA EKRANA EKLEME İÇİN)
+     * =========================================================================
+     */
+    (function setupInlinePWA() {
+      try {
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <rect width="512" height="512" rx="96" fill="#14171c"/>
+          <rect x="40" y="56" width="432" height="150" rx="24" fill="#b4bcc8"/>
+          <rect x="64" y="80" width="160" height="102" rx="14" fill="#181b20"/>
+          <circle cx="428" cy="108" r="18" fill="#ef4444"/>
+          <rect x="40" y="236" width="432" height="220" rx="20" fill="#090b0e" stroke="#374151" stroke-width="8"/>
+          <g fill="#cfd5de">
+            <rect x="58" y="254" width="50" height="184" rx="4"/>
+            <rect x="116" y="254" width="50" height="184" rx="4"/>
+            <rect x="174" y="254" width="50" height="184" rx="4"/>
+            <rect x="232" y="254" width="50" height="184" rx="4"/>
+            <rect x="290" y="254" width="50" height="184" rx="4"/>
+            <rect x="348" y="254" width="50" height="184" rx="4"/>
+            <rect x="406" y="254" width="48" height="184" rx="4"/>
+          </g>
+          <g fill="#1f242d" stroke="#6b7280" stroke-width="4">
+            <rect x="94" y="254" width="36" height="104" rx="4"/>
+            <rect x="210" y="254" width="36" height="104" rx="4"/>
+            <rect x="268" y="254" width="36" height="104" rx="4"/>
+            <rect x="384" y="254" width="36" height="104" rx="4"/>
+          </g>
+        </svg>`;
+
+        const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+
+        // Apple Touch Icon ekle
+        const appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        appleIcon.href = svgDataUrl;
+        document.head.appendChild(appleIcon);
+
+        // Standart favicon ekle
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.type = 'image/svg+xml';
+        favicon.href = svgDataUrl;
+        document.head.appendChild(favicon);
+
+        // Dinamik Web App Manifest (Blob URL)
+        const manifest = {
+          name: 'Sanal Stylophone S-1',
+          short_name: 'Stylophone',
+          description: 'Mobil dokunmatik analog Dubreq Stylophone S-1 sentezleyici.',
+          start_url: '.',
+          display: 'fullscreen',
+          orientation: 'landscape',
+          background_color: '#101215',
+          theme_color: '#121417',
+          icons: [
+            {
+              src: svgDataUrl,
+              sizes: '512x512',
+              type: 'image/svg+xml',
+              purpose: 'any maskable'
+            }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestUrl;
+        document.head.appendChild(manifestLink);
+      } catch (err) {
+        console.warn('Manifest oluşturulamadı:', err);
+      }
+    })();
+
+    /**
+     * =========================================================================
+     * 2. KLASİK 20 TUŞLU STYLOPHONE S-1 HARİTASI (A3 – E5)
+     * =========================================================================
+     */
+    const KEYS = [
+      { id: '1',    note: 'A3',  short: 'A',  midi: 57, type: 'natural', naturalIndex: 0,  code: 'KeyZ' },
+      { id: '1.5',  note: 'A#3', short: 'A#', midi: 58, type: 'sharp',   afterNatural: 0,  code: 'KeyS' },
+      { id: '2',    note: 'B3',  short: 'B',  midi: 59, type: 'natural', naturalIndex: 1,  code: 'KeyX' },
+      { id: '3',    note: 'C4',  short: 'C',  midi: 60, type: 'natural', naturalIndex: 2,  code: 'KeyC' },
+      { id: '3.5',  note: 'C#4', short: 'C#', midi: 61, type: 'sharp',   afterNatural: 2,  code: 'KeyF' },
+      { id: '4',    note: 'D4',  short: 'D',  midi: 62, type: 'natural', naturalIndex: 3,  code: 'KeyV' },
+      { id: '4.5',  note: 'D#4', short: 'D#', midi: 63, type: 'sharp',   afterNatural: 3,  code: 'KeyG' },
+      { id: '5',    note: 'E4',  short: 'E',  midi: 64, type: 'natural', naturalIndex: 4,  code: 'KeyB' },
+      { id: '6',    note: 'F4',  short: 'F',  midi: 65, type: 'natural', naturalIndex: 5,  code: 'KeyN' },
+      { id: '6.5',  note: 'F#4', short: 'F#', midi: 66, type: 'sharp',   afterNatural: 5,  code: 'KeyJ' },
+      { id: '7',    note: 'G4',  short: 'G',  midi: 67, type: 'natural', naturalIndex: 6,  code: 'KeyM' },
+      { id: '7.5',  note: 'G#4', short: 'G#', midi: 68, type: 'sharp',   afterNatural: 6,  code: 'KeyK' },
+      { id: '8',    note: 'A4',  short: 'A',  midi: 69, type: 'natural', naturalIndex: 7,  code: 'KeyQ' },
+      { id: '8.5',  note: 'A#4', short: 'A#', midi: 70, type: 'sharp',   afterNatural: 7,  code: 'Digit2' },
+      { id: '9',    note: 'B4',  short: 'B',  midi: 71, type: 'natural', naturalIndex: 8,  code: 'KeyW' },
+      { id: '10',   note: 'C5',  short: 'C',  midi: 72, type: 'natural', naturalIndex: 9,  code: 'KeyE' },
+      { id: '10.5', note: 'C#5', short: 'C#', midi: 73, type: 'sharp',   afterNatural: 9,  code: 'Digit4' },
+      { id: '11',   note: 'D5',  short: 'D',  midi: 74, type: 'natural', naturalIndex: 10, code: 'KeyR' },
+      { id: '11.5', note: 'D#5', short: 'D#', midi: 75, type: 'sharp',   afterNatural: 10, code: 'Digit5' },
+      { id: '12',   note: 'E5',  short: 'E',  midi: 76, type: 'natural', naturalIndex: 11, code: 'KeyT' }
+    ];
+
+    const state = {
+      powerOn: true,
+      octave: 2,          // 1: Pes (-12), 2: Orta (0), 3: Tiz (+12)
+      vibratoOn: false,
+      tuneCents: 0,       // -100 .. +100
+      volume: 0.80,
+      hapticOn: true,
+      showLabels: true,
+      beatPlaying: false,
+      activeKeyId: null,
+      activePointerId: null,
+      pressedKbdStack: []
+    };
+
+    const keyById = new Map(KEYS.map(k => [k.id, k]));
+    const keyByCode = new Map(KEYS.map(k => [k.code, k]));
+    const keyElMap = new Map();
+
+    // DOM Referansları
+    const keyboardStage = document.getElementById('keyboardStage');
+    const noteReadout = document.getElementById('noteReadout');
+    const powerBtn = document.getElementById('powerBtn');
+    const powerLed = document.getElementById('powerLed');
+    const octaveBtns = document.querySelectorAll('.octave-btn');
+    const vibratoBtn = document.getElementById('vibratoBtn');
+    const beatBtn = document.getElementById('beatBtn');
+    const beatDot = document.getElementById('beatDot');
+    const beatPing = document.getElementById('beatPing');
+    const hapticBtn = document.getElementById('hapticBtn');
+    const labelsBtn = document.getElementById('labelsBtn');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeVal = document.getElementById('volumeVal');
+    const tuneSlider = document.getElementById('tuneSlider');
+    const tuneVal = document.getElementById('tuneVal');
+    const tuneResetBtn = document.getElementById('tuneResetBtn');
+    const portraitHint = document.getElementById('portraitHint');
+    const dismissHintBtn = document.getElementById('dismissHintBtn');
+
+    /**
+     * =========================================================================
+     * 3. WEB AUDIO API ANALOG STYLOPHONE SENTEZLEYİCİ MOTORU
+     * =========================================================================
+     */
+    class AnalogStylophoneEngine {
+      constructor() {
+        this.ctx = null;
+        this.ready = false;
+        this.isPlaying = false;
+        this.currentMidi = null;
+      }
+
+      /**
+       * iOS Safari ve Android Chrome için AudioContext'i ilk dokunuşta açar.
+       */
+      unlock() {
+        try {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioCtx({ latencyHint: 'interactive' });
+          }
+
+          if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+
+          if (this.ready) return;
+
+          // iOS Safari sessiz buffer uyandırması
+          const silentBuf = this.ctx.createBuffer(1, 1, 22050);
+          const silentSrc = this.ctx.createBufferSource();
+          silentSrc.buffer = silentBuf;
+          silentSrc.connect(this.ctx.destination);
+          silentSrc.start(0);
+
+          const now = this.ctx.currentTime;
+
+          // Master Çıkış
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.setValueAtTime(state.volume * 0.44, now);
+          this.masterGain.connect(this.ctx.destination);
+
+          // VCA (Zarf Kontrolü)
+          this.vca = this.ctx.createGain();
+          this.vca.gain.setValueAtTime(0.0001, now);
+
+          // Mini Hoparlör Kabin Filtreleri
+          this.hpFilter = this.ctx.createBiquadFilter();
+          this.hpFilter.type = 'highpass';
+          this.hpFilter.frequency.setValueAtTime(155, now);
+
+          this.nasalPeak = this.ctx.createBiquadFilter();
+          this.nasalPeak.type = 'peaking';
+          this.nasalPeak.frequency.setValueAtTime(1700, now);
+          this.nasalPeak.Q.setValueAtTime(1.5, now);
+          this.nasalPeak.gain.setValueAtTime(5.2, now);
+
+          this.lpFilter = this.ctx.createBiquadFilter();
+          this.lpFilter.type = 'lowpass';
+          this.lpFilter.frequency.setValueAtTime(4600, now);
+          this.lpFilter.Q.setValueAtTime(1.0, now);
+
+          // Analog Transistör Doygunluğu (WaveShaper)
+          this.shaper = this.ctx.createWaveShaper();
+          this.shaper.curve = this.makeAnalogCurve(18);
+          this.shaper.oversample = '2x';
+
+          // Çift Osilatör (Sawtooth + Square)
+          this.oscSaw = this.ctx.createOscillator();
+          this.oscSaw.type = 'sawtooth';
+
+          this.oscSquare = this.ctx.createOscillator();
+          this.oscSquare.type = 'square';
+
+          this.sawGain = this.ctx.createGain();
+          this.sawGain.gain.setValueAtTime(0.66, now);
+
+          this.sqGain = this.ctx.createGain();
+          this.sqGain.gain.setValueAtTime(0.36, now);
+
+          // ~6 Hz Klasik Stylophone Vibrato LFO
+          this.lfo = this.ctx.createOscillator();
+          this.lfo.type = 'sine';
+          this.lfo.frequency.setValueAtTime(6.0, now);
+
+          this.lfoDepth = this.ctx.createGain();
+          this.lfoDepth.gain.setValueAtTime(state.vibratoOn ? 25 : 0, now);
+
+          this.lfo.connect(this.lfoDepth);
+          this.lfoDepth.connect(this.oscSaw.detune);
+          this.lfoDepth.connect(this.oscSquare.detune);
+
+          // Sinyal Zinciri
+          this.oscSaw.connect(this.sawGain);
+          this.oscSquare.connect(this.sqGain);
+          this.sawGain.connect(this.shaper);
+          this.sqGain.connect(this.shaper);
+
+          this.shaper.connect(this.hpFilter);
+          this.hpFilter.connect(this.nasalPeak);
+          this.nasalPeak.connect(this.lpFilter);
+          this.lpFilter.connect(this.vca);
+          this.vca.connect(this.masterGain);
+
+          this.oscSaw.start(now);
+          this.oscSquare.start(now);
+          this.lfo.start(now);
+
+          this.updateCabinetByOctave();
+          this.ready = true;
+        } catch (err) {
+          console.error('AudioContext başlatılamadı:', err);
+        }
+      }
+
+      makeAnalogCurve(amount) {
+        const n = 1024;
+        const curve = new Float32Array(n);
+        const deg = Math.PI / 180;
+        for (let i = 0; i < n; i++) {
+          const x = (i * 2) / n - 1;
+          curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+        }
+        return curve;
+      }
+
+      midiToFreq(midi) {
+        const octShift = (state.octave - 2) * 12;
+        const shifted = midi + octShift + (state.tuneCents / 100);
+        return 440 * Math.pow(2, (shifted - 69) / 12);
+      }
+
+      updateCabinetByOctave() {
+        if (!this.ready) return;
+        const now = this.ctx.currentTime;
+        if (state.octave === 1) {
+          this.hpFilter.frequency.setTargetAtTime(90, now, 0.02);
+          this.lpFilter.frequency.setTargetAtTime(3400, now, 0.02);
+        } else if (state.octave === 2) {
+          this.hpFilter.frequency.setTargetAtTime(155, now, 0.02);
+          this.lpFilter.frequency.setTargetAtTime(4600, now, 0.02);
+        } else {
+          this.hpFilter.frequency.setTargetAtTime(220, now, 0.02);
+          this.lpFilter.frequency.setTargetAtTime(6200, now, 0.02);
+        }
+      }
+
+      playStylusClick() {
+        if (!this.ready) return;
+        const now = this.ctx.currentTime;
+        const len = Math.floor(this.ctx.sampleRate * 0.004);
+        const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * 0.3));
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+
+        const bp = this.ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(2900, now);
+
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.11, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.004);
+
+        src.connect(bp);
+        bp.connect(g);
+        g.connect(this.masterGain);
+        src.start(now);
+      }
+
+      playNote(midi, isSlide = false) {
+        if (!state.powerOn) return;
+        this.unlock();
+        if (!this.ready) return;
+
+        const now = this.ctx.currentTime;
+        const freq = this.midiToFreq(midi);
+        this.currentMidi = midi;
+
+        // Kaydırmada pürüzsüz analog portamento (7ms), ilk dokunuşta keskin geçiş
+        const glide = isSlide ? 0.007 : 0.0015;
+        this.oscSaw.frequency.setTargetAtTime(freq, now, glide);
+        this.oscSquare.frequency.setTargetAtTime(freq * 1.0018, now, glide);
+
+        if (!this.isPlaying) {
+          this.playStylusClick();
+          this.vca.gain.cancelScheduledValues(now);
+          this.vca.gain.setValueAtTime(Math.max(this.vca.gain.value, 0.0001), now);
+          this.vca.gain.linearRampToValueAtTime(1.0, now + 0.005);
+          this.isPlaying = true;
+        }
+      }
+
+      stopNote() {
+        if (!this.ready || !this.isPlaying) return;
+        const now = this.ctx.currentTime;
+        this.vca.gain.cancelScheduledValues(now);
+        this.vca.gain.setValueAtTime(this.vca.gain.value, now);
+        this.vca.gain.exponentialRampToValueAtTime(0.0001, now + 0.016);
+        this.isPlaying = false;
+        this.currentMidi = null;
+      }
+
+      refreshPitch() {
+        if (!this.ready) return;
+        this.updateCabinetByOctave();
+        if (this.isPlaying && this.currentMidi !== null) {
+          const now = this.ctx.currentTime;
+          const freq = this.midiToFreq(this.currentMidi);
+          this.oscSaw.frequency.setTargetAtTime(freq, now, 0.008);
+          this.oscSquare.frequency.setTargetAtTime(freq * 1.0018, now, 0.008);
+        }
+      }
+
+      setVibrato(on) {
+        if (!this.ready) return;
+        this.lfoDepth.gain.setTargetAtTime(on ? 25 : 0, this.ctx.currentTime, 0.02);
+      }
+
+      setVolume(val) {
+        if (!this.ready) return;
+        this.masterGain.gain.setTargetAtTime(val * 0.44, this.ctx.currentTime, 0.015);
+      }
+    }
+
+    const synth = new AnalogStylophoneEngine();
+
+    /**
+     * =========================================================================
+     * 4. 108 BPM DEEP HOUSE ARKA PLAN RİTMİ (Fm – Gb BAS NABZI)
+     * =========================================================================
+     */
+    class DeepHouseGroove {
+      constructor() {
+        this.bpm = 108;
+        this.step = 0;
+        this.nextTime = 0;
+        this.timer = null;
+        this.beatGain = null;
+        this.noiseBuf = null;
+      }
+
+      prepare() {
+        synth.unlock();
+        const ctx = synth.ctx;
+        if (!ctx) return false;
+
+        if (!this.beatGain) {
+          this.beatGain = ctx.createGain();
+          this.beatGain.gain.setValueAtTime(0.32, ctx.currentTime);
+          this.beatGain.connect(ctx.destination);
+        }
+
+        if (!this.noiseBuf) {
+          const size = ctx.sampleRate * 0.4;
+          this.noiseBuf = ctx.createBuffer(1, size, ctx.sampleRate);
+          const d = this.noiseBuf.getChannelData(0);
+          for (let i = 0; i < size; i++) d[i] = Math.random() * 2 - 1;
+        }
+        return true;
+      }
+
+      kick(t) {
+        const ctx = synth.ctx;
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(124, t);
+        o.frequency.exponentialRampToValueAtTime(42, t + 0.09);
+        g.gain.setValueAtTime(0.95, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
+        o.connect(g);
+        g.connect(this.beatGain);
+        o.start(t);
+        o.stop(t + 0.35);
+      }
+
+      hat(t, open) {
+        const ctx = synth.ctx;
+        const s = ctx.createBufferSource();
+        s.buffer = this.noiseBuf;
+        const f = ctx.createBiquadFilter();
+        f.type = 'highpass';
+        f.frequency.setValueAtTime(open ? 6800 : 8600, t);
+        const g = ctx.createGain();
+        const dur = open ? 0.13 : 0.04;
+        g.gain.setValueAtTime(open ? 0.22 : 0.1, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        s.connect(f);
+        f.connect(g);
+        g.connect(this.beatGain);
+        s.start(t);
+        s.stop(t + dur + 0.01);
+      }
+
+      clap(t) {
+        const ctx = synth.ctx;
+        const s = ctx.createBufferSource();
+        s.buffer = this.noiseBuf;
+        const f = ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(1400, t);
+        f.Q.setValueAtTime(1.2, t);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.22, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        s.connect(f);
+        f.connect(g);
+        g.connect(this.beatGain);
+        s.start(t);
+        s.stop(t + 0.13);
+      }
+
+      bass(t, freq) {
+        const ctx = synth.ctx;
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(freq, t);
+
+        const f = ctx.createBiquadFilter();
+        f.type = 'lowpass';
+        f.frequency.setValueAtTime(420, t);
+        f.frequency.exponentialRampToValueAtTime(105, t + 0.22);
+        f.Q.setValueAtTime(2.0, t);
+
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.001, t);
+        g.gain.linearRampToValueAtTime(0.46, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+
+        o.connect(f);
+        f.connect(g);
+        g.connect(this.beatGain);
+        o.start(t);
+        o.stop(t + 0.3);
+      }
+
+      scheduleStep(idx, t) {
+        const barStep = idx % 16;
+        if (barStep % 4 === 0) this.kick(t);
+        if (barStep === 4 || barStep === 12) this.clap(t);
+        if (barStep % 4 === 2) this.hat(t, true);
+        else if (barStep === 7 || barStep === 15) this.hat(t, false);
+
+        // 1. Ölçü: F1 (43.65 Hz) | 2. Ölçü: Gb1 (46.25 Hz)
+        const freq = idx < 16 ? 43.65 : 46.25;
+        if (barStep === 0 || barStep === 3 || barStep === 6 || barStep === 10 || barStep === 14) {
+          this.bass(t, freq);
+        }
+      }
+
+      tick() {
+        const ctx = synth.ctx;
+        const stepDur = (60.0 / this.bpm) / 4.0;
+        while (this.nextTime < ctx.currentTime + 0.12) {
+          this.scheduleStep(this.step, this.nextTime);
+          this.nextTime += stepDur;
+          this.step = (this.step + 1) % 32;
+        }
+      }
+
+      start() {
+        if (!this.prepare()) return;
+        this.step = 0;
+        this.nextTime = synth.ctx.currentTime + 0.04;
+        this.timer = setInterval(() => this.tick(), 25);
+      }
+
+      stop() {
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+        }
+      }
+    }
+
+    const groove = new DeepHouseGroove();
+
+    /**
+     * =========================================================================
+     * 5. 20 METALİK TUŞU OLUŞTURMA
+     * =========================================================================
+     */
+    function buildKeyboard() {
+      keyboardStage.innerHTML = '';
+      const naturalCount = 12;
+      const natWidthPct = 100 / naturalCount;
+
+      const natRow = document.createElement('div');
+      natRow.className = 'flex w-full h-full';
+
+      KEYS.filter(k => k.type === 'natural').forEach(k => {
+        const el = document.createElement('div');
+        el.dataset.keyId = k.id;
+        el.className = 'metal-key-natural flex-1 h-full flex flex-col items-center justify-end pb-2 sm:pb-3';
+        el.innerHTML = `
+          <span class="key-label font-mono font-bold text-xs sm:text-sm leading-none">${k.id}</span>
+          <span class="key-label text-[9px] sm:text-[11px] font-semibold opacity-70 mt-0.5">${k.short}</span>
+        `;
+        natRow.appendChild(el);
+        keyElMap.set(k.id, el);
+      });
+
+      keyboardStage.appendChild(natRow);
+
+      const sharpWidthPct = natWidthPct * 0.70;
+      KEYS.filter(k => k.type === 'sharp').forEach(k => {
+        const el = document.createElement('div');
+        el.dataset.keyId = k.id;
+        el.className = 'metal-key-sharp absolute top-0 rounded-b-lg flex flex-col items-center justify-end pb-1.5 sm:pb-2';
+        const leftPct = (k.afterNatural + 1) * natWidthPct - (sharpWidthPct / 2);
+        el.style.left = `${leftPct}%`;
+        el.style.width = `${sharpWidthPct}%`;
+        el.style.height = '57%';
+        el.innerHTML = `
+          <span class="key-label font-mono font-bold text-[10px] sm:text-xs leading-none">${k.id}</span>
+          <span class="key-label text-[8px] sm:text-[10px] font-medium opacity-75 mt-0.5">${k.short}</span>
+        `;
+        keyboardStage.appendChild(el);
+        keyElMap.set(k.id, el);
+      });
+    }
+
+    /**
+     * =========================================================================
+     * 6. DOKUNMATİK GLISSANDO, HAPTİK TİTREŞİM VE NOTA AKTİVASYONU
+     * =========================================================================
+     */
+    function triggerHaptic() {
+      if (!state.hapticOn) return;
+      try {
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          navigator.vibrate(10);
+        }
+      } catch (_) {}
+    }
+
+    function formatDisplayNote(k) {
+      const baseOct = parseInt(k.note.slice(-1), 10);
+      const oct = baseOct + (state.octave - 2);
+      return `${k.short}${oct} • ${k.id}`;
+    }
+
+    function activateKey(keyId, isSlide = false) {
+      if (!state.powerOn) return;
+      if (state.activeKeyId === keyId) return;
+
+      if (state.activeKeyId && keyElMap.has(state.activeKeyId)) {
+        keyElMap.get(state.activeKeyId).classList.remove('active');
+      }
+
+      const keyObj = keyById.get(keyId);
+      if (!keyObj) return;
+
+      state.activeKeyId = keyId;
+      const el = keyElMap.get(keyId);
+      if (el) el.classList.add('active');
+
+      noteReadout.textContent = formatDisplayNote(keyObj);
+      triggerHaptic();
+      synth.playNote(keyObj.midi, isSlide);
+    }
+
+    function releaseKey() {
+      if (state.activeKeyId && keyElMap.has(state.activeKeyId)) {
+        keyElMap.get(state.activeKeyId).classList.remove('active');
+      }
+      state.activeKeyId = null;
+      noteReadout.textContent = '--';
+      synth.stopNote();
+    }
+
+    function findKeyIdAt(x, y) {
+      const target = document.elementFromPoint(x, y);
+      if (!target) return null;
+      const keyEl = target.closest('[data-key-id]');
+      return keyEl ? keyEl.dataset.keyId : null;
+    }
+
+    // Pointer Events (hem dokunmatik hem fare için pürüzsüz glissando)
+    keyboardStage.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      synth.unlock();
+      state.activePointerId = e.pointerId;
+      const keyId = findKeyIdAt(e.clientX, e.clientY);
+      if (keyId) activateKey(keyId, false);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (state.activePointerId === null || e.pointerId !== state.activePointerId) return;
+      const keyId = findKeyIdAt(e.clientX, e.clientY);
+      if (keyId) activateKey(keyId, true);
+      else releaseKey();
+    });
+
+    const endPointer = (e) => {
+      if (state.activePointerId === null || e.pointerId !== state.activePointerId) return;
+      state.activePointerId = null;
+      if (state.pressedKbdStack.length > 0) {
+        activateKey(state.pressedKbdStack[state.pressedKbdStack.length - 1], true);
+      } else {
+        releaseKey();
+      }
+    };
+
+    window.addEventListener('pointerup', endPointer);
+    window.addEventListener('pointercancel', endPointer);
+
+    // iOS Safari / Android Chrome sürükleme sırasında sayfa kaymasını tamamen engelle
+    keyboardStage.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      synth.unlock();
+    }, { passive: false });
+
+    keyboardStage.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (e.touches.length === 0) return;
+      const t = e.touches[0];
+      const keyId = findKeyIdAt(t.clientX, t.clientY);
+      if (keyId) activateKey(keyId, true);
+      else releaseKey();
+    }, { passive: false });
+
+    keyboardStage.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        state.activePointerId = null;
+        releaseKey();
+      }
+    });
+
+    // Bonus: Masaüstü klavye desteği
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      const k = keyByCode.get(e.code);
+      if (!k) return;
+      e.preventDefault();
+      if (!state.pressedKbdStack.includes(k.id)) state.pressedKbdStack.push(k.id);
+      activateKey(k.id, state.activeKeyId !== null);
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const k = keyByCode.get(e.code);
+      if (!k) return;
+      state.pressedKbdStack = state.pressedKbdStack.filter(id => id !== k.id);
+      if (state.pressedKbdStack.length > 0) {
+        activateKey(state.pressedKbdStack[state.pressedKbdStack.length - 1], true);
+      } else if (state.activePointerId === null) {
+        releaseKey();
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      state.activePointerId = null;
+      state.pressedKbdStack = [];
+      releaseKey();
+    });
+
+    /**
+     * =========================================================================
+     * 7. DONANIM KONTROL ANAHTARLARI
+     * =========================================================================
+     */
+
+    // Güç
+    powerBtn.addEventListener('click', () => {
+      state.powerOn = !state.powerOn;
+      triggerHaptic();
+      if (state.powerOn) {
+        powerLed.classList.add('on');
+        powerBtn.textContent = 'GÜÇ: AÇIK';
+        powerBtn.classList.add('active-red');
+      } else {
+        powerLed.classList.remove('on');
+        powerBtn.textContent = 'GÜÇ: KAPALI';
+        powerBtn.classList.remove('active-red');
+        state.pressedKbdStack = [];
+        releaseKey();
+      }
+    });
+
+    // Oktav (1 / 2 / 3)
+    octaveBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.octave = parseInt(btn.dataset.octave, 10);
+        octaveBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        triggerHaptic();
+        synth.refreshPitch();
+        if (state.activeKeyId) {
+          noteReadout.textContent = formatDisplayNote(keyById.get(state.activeKeyId));
+        }
+      });
+    });
+
+    // Vibrato
+    vibratoBtn.addEventListener('click', () => {
+      state.vibratoOn = !state.vibratoOn;
+      vibratoBtn.textContent = state.vibratoOn ? 'AÇIK' : 'KAPALI';
+      vibratoBtn.classList.toggle('active-amber', state.vibratoOn);
+      triggerHaptic();
+      synth.setVibrato(state.vibratoOn);
+    });
+
+    // 108 BPM Deep House Ritmi
+    beatBtn.addEventListener('click', () => {
+      state.beatPlaying = !state.beatPlaying;
+      triggerHaptic();
+      if (state.beatPlaying) {
+        groove.start();
+        beatBtn.classList.add('active-amber');
+        beatDot.classList.remove('bg-zinc-500');
+        beatDot.classList.add('bg-amber-300');
+        beatPing.classList.remove('hidden');
+      } else {
+        groove.stop();
+        beatBtn.classList.remove('active-amber');
+        beatDot.classList.remove('bg-amber-300');
+        beatDot.classList.add('bg-zinc-500');
+        beatPing.classList.add('hidden');
+      }
+    });
+
+    // Titreşim (Haptic)
+    hapticBtn.addEventListener('click', () => {
+      state.hapticOn = !state.hapticOn;
+      hapticBtn.classList.toggle('active-emerald', state.hapticOn);
+      if (state.hapticOn) triggerHaptic();
+    });
+
+    // Nota Etiketleri
+    labelsBtn.addEventListener('click', () => {
+      state.showLabels = !state.showLabels;
+      labelsBtn.classList.toggle('active', state.showLabels);
+      keyboardStage.classList.toggle('hide-labels', !state.showLabels);
+    });
+
+    // Ses Seviyesi
+    volumeSlider.addEventListener('input', (e) => {
+      const pct = parseInt(e.target.value, 10);
+      state.volume = pct / 100;
+      volumeVal.textContent = `${pct}%`;
+      synth.setVolume(state.volume);
+    });
+
+    // Akort (±100 cent)
+    const setTune = (cents) => {
+      state.tuneCents = cents;
+      tuneVal.textContent = `${cents > 0 ? '+' : ''}${cents}¢`;
+      synth.refreshPitch();
+    };
+
+    tuneSlider.addEventListener('input', (e) => setTune(parseInt(e.target.value, 10)));
+    tuneResetBtn.addEventListener('click', () => {
+      tuneSlider.value = 0;
+      setTune(0);
+      triggerHaptic();
+    });
+
+    // Dikey mod ipucunu kapat
+    dismissHintBtn.addEventListener('click', () => {
+      portraitHint.classList.add('dismissed');
+    });
+
+    // Uygulamayı başlat
+    buildKeyboard();
+  </script>
+</body>
+</html>
